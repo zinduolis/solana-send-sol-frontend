@@ -1,12 +1,32 @@
 import { FC } from 'react'
+import * as Web3 from '@solana/web3.js';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import styles from '../styles/Home.module.css'
 
 
 export const SendSolForm: FC = () => {
+    const { connection } = useConnection();
+    const { publicKey, sendTransaction } = useWallet()
 
-    const sendSol = event => {
-        event.preventDefault()
-        console.log(`Send ${event.target.amount.value} SOL to ${event.target.recipient.value}`)
+    const sendSol = async (event) => {
+        event.preventDefault();
+
+        if (!connection || !publicKey) { return }
+
+        const receiver = new Web3.PublicKey(event.target.recipient.value);
+        const transaction = new Web3.Transaction();
+        const instruction = Web3.SystemProgram.transfer({
+                fromPubkey: publicKey,
+                toPubkey: receiver,
+                lamports: Web3.LAMPORTS_PER_SOL * event.target.amount.value,
+        });
+        transaction.add(instruction);
+       sendTransaction(transaction, connection).then(sig => {
+        console.log(
+            `Transfer tx: https://explorer.solana.com/tx/${sig}?cluster=devnet`
+        )
+        console.log(`Sent ${event.target.amount.value} SOL to ${event.target.recipient.value}`)
+       });    
     }
 
     return (
